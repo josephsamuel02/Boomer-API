@@ -1,0 +1,16 @@
+model User {
+    id          String   @id @default(auto()) @map("_id") @db.ObjectId
+    user_id     String   @unique
+    user_name   String   @unique
+    email       String   @unique
+    password    String
+    profile_img String?
+    bio         String?
+    country     String?
+    language    String?
+    interests   String[]
+    isActive    Boolean? @default(false)
+    suspended   Boolean? @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}

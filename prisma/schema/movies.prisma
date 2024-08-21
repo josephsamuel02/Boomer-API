@@ -1,0 +1,29 @@
+model movies {
+    id                 String     @id @default(auto()) @map("_id") @db.ObjectId
+    movie_id           String?    @unique
+    poster_id          String?
+    editors_id         String[]
+    movie_title        String?
+    tags               String[]
+    synopsis           String?
+    movie_genre        String?
+    released           Boolean?
+    release_date       DateTime?
+    copyright_license  String[]
+    company            String?
+    movie_poster_image String[]
+    download_links     String[]
+    rating             Int?
+    age_rating         ageRating?
+    industry           String?
+    language           String?
+    createdAt          DateTime?  @default(now())
+    updatedAt          DateTime?  @updatedAt
+}
+
+enum ageRating {
+    r_rated
+    eighteen
+    twelve
+    pg13
+}

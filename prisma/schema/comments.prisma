@@ -1,0 +1,26 @@
+model Comments {
+    id       String    @id @default(auto()) @map("_id") @db.ObjectId
+    movie_id String    @unique
+    comments Comment[]
+}
+
+type Comment {
+    comment_id String
+    user_id    String
+    text       String?
+    video      String?
+    url        String?
+    audio      String?
+    image      String?
+    gif        String?
+    likes      Int?
+    dislikes   Int?
+    replies    Replies[]
+    createdAt  DateTime  @default(now())
+}
+
+type Replies {
+    user_id   String
+    user_name String
+    comment   String
+}

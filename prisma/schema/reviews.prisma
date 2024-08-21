@@ -1,0 +1,15 @@
+model Reviews {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  movie_id String   @unique
+  reviews  Review[]
+}
+
+type Review {
+  user_id       String
+  profile_image String?
+  user_name     String?
+  rating        Int?
+  comment       String?
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime?
+}
