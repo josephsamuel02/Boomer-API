@@ -18,8 +18,8 @@ async function bootstrap() {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle("Artsony API")
-    .setDescription("This the API documentation of Artsony backend application")
+    .setTitle("Boomer API")
+    .setDescription("This the API documentation of Boomer backend application")
     .setVersion("1.0")
     .addBearerAuth()
     .build();
