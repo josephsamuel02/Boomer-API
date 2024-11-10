@@ -6,7 +6,7 @@ model movies {
     movie_title        String?
     tags               String[]
     synopsis           String?
-    movie_genre        String?
+    movie_genre        String[]
     released           Boolean?
     release_date       DateTime?
     copyright_license  String[]
