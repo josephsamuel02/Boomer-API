@@ -71,7 +71,7 @@ export class MoviesDto {
   })
   @IsArray()
   @IsString()
-  movie_genre?: string;
+  movie_genre?: string[];
 
   @ApiPropertyOptional({
     description: "Whether the movie is released",
