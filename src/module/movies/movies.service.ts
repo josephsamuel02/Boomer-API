@@ -110,13 +110,19 @@ export class MovieService {
 
   public async getMoviesByGenre(moviesDto: MoviesDto): Promise<any> {
     try {
+      // Using the $in operator to check if the genre is part of the movie_genre array
       const movies = await this.prisma.movies.findMany({
-        where: { movie_genre: moviesDto.movie_genre },
+        where: {
+          movie_genre: {
+            // Ensure movie_genre is an array and match any of the values passed in moviesDto.movie_genre
+            hasSome: moviesDto.movie_genre, // Alternatively, use 'has' for exact match of a single genre
+          },
+        },
       });
 
-      if (!movies) {
+      if (!movies || movies.length === 0) {
         throw new BadRequestException({
-          message: "Unable to get movies",
+          message: "No movies found for the provided genres",
         });
       }
 
