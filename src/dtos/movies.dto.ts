@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsNotEmpty,
   IsEnum,
+  IsNumber,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -32,6 +33,22 @@ export class MoviesDto {
   @IsString()
   @IsOptional()
   poster_id?: string;
+
+  @ApiPropertyOptional({
+    description: "profile image",
+    example: "https://image",
+  })
+  @IsString()
+  @IsOptional()
+  poster_profile_image?: string;
+
+  @ApiPropertyOptional({
+    description: "user name",
+    example: "username",
+  })
+  @IsString()
+  @IsOptional()
+  poster_user_name?: string;
 
   @ApiPropertyOptional({
     description: "Editor ID",
@@ -145,6 +162,10 @@ export class MoviesDto {
   @IsString()
   @IsOptional()
   reviews?: any;
+
+  @IsNumber()
+  @IsOptional()
+  rating?: number;
 
   @ApiPropertyOptional({
     description: "Age rating of the movie",

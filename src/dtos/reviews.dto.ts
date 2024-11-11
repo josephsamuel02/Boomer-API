@@ -1,20 +1,22 @@
-import {
-  IsString,
-  IsInt,
-  IsOptional,
-  IsArray,
-  IsNotEmpty,
-} from "class-validator";
+import { IsString, IsInt, IsOptional, IsNotEmpty } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
-interface Review {
-  user_id: string;
-  profile_image: string;
-  user_name: string;
-  rating: number;
-}
+// interface Review {
+//   user_id: string;
+//   profile_image: string;
+//   user_name: string;
+//   rating: number;
+// }
 
 export class ReviewsDto {
+  @ApiProperty({
+    description: "Unique identifier for the movie",
+    example: "movie_12345",
+  })
+  @IsString()
+  @IsNotEmpty()
+  movie_id: string;
+
   @ApiProperty({
     description: "Unique identifier for the user",
     example: "user_12345",
@@ -44,21 +46,7 @@ export class ReviewsDto {
   })
   @IsInt()
   @IsNotEmpty()
-  rating: number;
-
-  @ApiProperty({
-    description: "Unique identifier for the movie",
-    example: "movie_12345",
-  })
-  @IsString()
-  @IsNotEmpty()
-  movie_id: string;
-
-  @ApiProperty({
-    description: "List of ratings given by users",
-  })
-  @IsArray()
-  ratings: Review[];
+  rating?: number;
 
   @ApiProperty({
     description: "Comment provided by the user",

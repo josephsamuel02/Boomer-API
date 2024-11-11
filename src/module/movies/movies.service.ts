@@ -22,11 +22,13 @@ export class MovieService {
         ...moviesDto,
       };
 
-      // Create the movie entry in the `movies` table, excluding reviews field
-      const { reviews, ...movieDataWithoutReviews } = movieData; // Exclude reviews from the data
+      // Extract reviews from the movie data to handle it separately
+      const { reviews, ...movieDataWithoutReviews } = movieData;
+
+      // Create the movie entry in the `movies` table
       const newMovie = await this.prisma.movies.create({
         data: {
-          ...movieDataWithoutReviews, // Use the movie data without reviews
+          ...movieDataWithoutReviews,
           ...(moviesDto.movie_poster_image && {
             movie_poster_image: {
               set: [...moviesDto.movie_poster_image],
@@ -44,46 +46,32 @@ export class MovieService {
         });
       }
 
-      // Create entry in the `comments` table for the movie
-      await this.prisma.comments.create({
-        data: { movie_id: movieData.movie_id },
-      });
+      // Handle review if provided
+      if (reviews) {
+        // Wrap the single review object in an array format for storage
+        const formattedReviewsArray = [
+          {
+            user_id: reviews.user_id,
+            profile_image: movieDataWithoutReviews.poster_profile_image,
+            user_name: movieDataWithoutReviews.poster_user_name,
+            rating: reviews.rating,
+            comment: reviews.comment,
+          },
+        ];
 
-      // Only insert or append review if provided
-      if (reviews && typeof reviews === "object") {
-        // Format the single review into the appropriate structure
-        const formattedReview = {
-          user_id: reviews.user_id,
-          profile_image: reviews.profile_image,
-          user_name: reviews.user_name,
-          rating: reviews.rating,
-          comment: reviews.comment,
-        };
-
-        // Check if the movie already has reviews
-        const existingReviews = await this.prisma.reviews.findUnique({
-          where: { movie_id: movieData.movie_id },
+        // Insert the reviews array into the Reviews table
+        await this.prisma.reviews.create({
+          data: {
+            movie_id: movieData.movie_id,
+            reviews: formattedReviewsArray,
+          },
         });
 
-        if (existingReviews) {
-          // Append the new review to the existing reviews array
-          await this.prisma.reviews.update({
-            where: { movie_id: movieData.movie_id },
-            data: {
-              reviews: {
-                push: formattedReview, // Append the new review to the existing array
-              },
-            },
-          });
-        } else {
-          // Create a new review entry with the single review
-          await this.prisma.reviews.create({
-            data: {
-              movie_id: movieData.movie_id,
-              reviews: [formattedReview], // Insert the single review as an array
-            },
-          });
-        }
+        // Since only one review is provided, we set this review's rating as the average rating in `movies` table
+        await this.prisma.movies.update({
+          where: { movie_id: movieData.movie_id },
+          data: { rating: reviews.rating, rating_count: 1 },
+        });
       }
 
       return {

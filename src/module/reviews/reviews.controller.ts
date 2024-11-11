@@ -6,6 +6,7 @@ import {
   UseInterceptors,
   Get,
   Delete,
+  Query,
 } from "@nestjs/common";
 import { ClassSerializerInterceptor } from "@nestjs/common";
 import { ReviewsDto } from "src/dtos/reviews.dto";
@@ -33,8 +34,8 @@ export class ReviewsController {
   }
 
   @Get()
-  async findMovieReviewsById(@Body() reviewsDto: ReviewsDto) {
-    return await this.reviewsService.findMovieReviewsById(reviewsDto);
+  async findMovieReviewsById(@Query("movie_id") movie_id: string) {
+    return await this.reviewsService.findMovieReviewsById(movie_id);
   }
 
   @UseGuards(JwtAuthGuard)

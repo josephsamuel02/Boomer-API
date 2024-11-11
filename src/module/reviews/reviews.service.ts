@@ -11,145 +11,163 @@ export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async postReview(reviewsDto: ReviewsDto) {
-    const reviews = await this.prisma.reviews.findUnique({
+    // Find the movie's review document in the Reviews table by movie_id
+    const movieReviews = await this.prisma.reviews.findUnique({
       where: { movie_id: reviewsDto.movie_id },
       select: { reviews: true },
     });
 
-    if (!reviews) {
-      throw new BadRequestException({
-        message: "Movie not found",
-      });
-    }
-
-    // Check if the review from the same user already exists
-    const existingReviewIndex = reviews.reviews.findIndex(
-      (review) => review.user_id === reviewsDto.user_id,
-    );
-
-    if (existingReviewIndex > -1) {
-      // Update the replies for the specific comment
-      const updatedComments = reviews.reviews.map((review) => {
-        if (review.user_id === reviewsDto.user_id) {
-          return {
-            ...review,
-
-            rating: reviewsDto.rating ? reviewsDto.rating : review.rating,
-            comment: reviewsDto.comment ? reviewsDto.comment : review.comment,
-            profile_image: reviewsDto.profile_image
-              ? reviewsDto.profile_image
-              : review.profile_image,
-            user_name: reviewsDto.user_name
-              ? reviewsDto.user_name
-              : review.user_name,
-            updatedAt: new Date(),
-          };
-        }
-        return review;
-      });
-
-      // Update the reviews array in the database
-      const updatedReviews = await this.prisma.reviews.update({
-        where: { movie_id: reviewsDto.movie_id },
+    // If no document exists for the movie, create a new one
+    if (!movieReviews) {
+      const newReviewDocument = await this.prisma.reviews.create({
         data: {
-          reviews: updatedComments,
+          movie_id: reviewsDto.movie_id,
+          reviews: [
+            {
+              user_id: reviewsDto.user_id,
+              profile_image: reviewsDto.profile_image,
+              user_name: reviewsDto.user_name,
+              rating: reviewsDto.rating,
+              comment: reviewsDto.comment,
+            },
+          ],
         },
+      });
+
+      // Update the rating in the movies table with the initial rating
+      await this.prisma.movies.update({
+        where: { movie_id: reviewsDto.movie_id },
+        data: { rating: reviewsDto.rating, rating_count: 1 },
       });
 
       return {
         status: 200,
-        message: "Review added or updated successfully",
-        data: updatedReviews,
+        message: "New review document created and review added successfully",
+        data: newReviewDocument,
       };
     }
 
+    // If the document exists, add a new review to the reviews array
     const updatedReviews = await this.prisma.reviews.update({
       where: { movie_id: reviewsDto.movie_id },
       data: {
         reviews: {
           push: {
             user_id: reviewsDto.user_id,
-            rating: reviewsDto.rating,
-            comment: reviewsDto.comment,
             profile_image: reviewsDto.profile_image,
             user_name: reviewsDto.user_name,
+            rating: reviewsDto.rating,
+            comment: reviewsDto.comment,
           },
         },
       },
     });
 
-    if (!updatedReviews) {
-      return new BadRequestException({
-        message: "Unable to add or update review",
-      });
-    }
+    // Calculate the new average rating
+    const totalRating = updatedReviews.reviews.reduce(
+      (sum, review) => sum + (review.rating ?? 0),
+      0,
+    );
+    const averageRating = Math.round(
+      totalRating / updatedReviews.reviews.length,
+    );
+
+    // Update the movie's rating in the movies table
+    await this.prisma.movies.update({
+      where: { movie_id: reviewsDto.movie_id },
+      data: {
+        rating: averageRating,
+        rating_count: updatedReviews.reviews.length,
+      },
+    });
+
     return {
       status: 200,
-      message: "Review added successfully",
-      data: updatedReviews.reviews[existingReviewIndex],
+      message: "Review added successfully and movie rating updated",
+      data: updatedReviews,
     };
   }
 
   async updateReview(reviewsDto: ReviewsDto) {
-    const reviews = await this.prisma.reviews.findUnique({
+    // Retrieve the reviews for the movie
+    const movieReviews = await this.prisma.reviews.findUnique({
       where: { movie_id: reviewsDto.movie_id },
       select: { reviews: true },
     });
 
-    if (!reviews) {
+    if (!movieReviews) {
       throw new BadRequestException({
         message: "Movie not found",
       });
     }
 
-    // Check if the review from the same user already exists
-    const existingReviewIndex = reviews.reviews.findIndex(
+    // Locate the index of the existing review by the same user
+    const existingReviewIndex = movieReviews.reviews.findIndex(
       (review) => review.user_id === reviewsDto.user_id,
     );
 
-    if (!existingReviewIndex) {
+    if (existingReviewIndex === -1) {
       throw new NotFoundException({
         message: "Review not found",
       });
     }
-    // Update the replies for the specific comment
-    const updatedComments = reviews.reviews.map((review) => {
-      if (review.user_id === reviewsDto.user_id) {
+
+    // Capture the old rating to check if it has changed
+    const oldRating = movieReviews.reviews[existingReviewIndex].rating;
+
+    // Update the specific review
+    const updatedReviewsArray = movieReviews.reviews.map((review, index) => {
+      if (index === existingReviewIndex) {
         return {
           ...review,
-
-          rating: reviewsDto.rating ? reviewsDto.rating : review.rating,
-          comment: reviewsDto.comment ? reviewsDto.comment : review.comment,
-          profile_image: reviewsDto.profile_image
-            ? reviewsDto.profile_image
-            : review.profile_image,
-          user_name: reviewsDto.user_name
-            ? reviewsDto.user_name
-            : review.user_name,
+          rating: reviewsDto.rating ?? review.rating,
+          comment: reviewsDto.comment ?? review.comment,
+          profile_image: reviewsDto.profile_image ?? review.profile_image,
+          user_name: reviewsDto.user_name ?? review.user_name,
           updatedAt: new Date(),
         };
       }
       return review;
     });
 
-    // Update the reviews array in the database
-    const updatedReviews = await this.prisma.reviews.update({
+    // Save the updated review array back to the database
+    const updatedReviewDocument = await this.prisma.reviews.update({
       where: { movie_id: reviewsDto.movie_id },
       data: {
-        reviews: updatedComments,
+        reviews: updatedReviewsArray,
       },
     });
 
+    // If the rating has changed, recalculate the movie's average rating
+    if (oldRating !== reviewsDto.rating) {
+      const totalRating = updatedReviewsArray.reduce(
+        (sum, review) => sum + (review.rating ?? 0),
+        0,
+      );
+      const newAverageRating = Math.round(
+        totalRating / updatedReviewsArray.length,
+      );
+
+      // Update the movie's average rating in the movies table
+      await this.prisma.movies.update({
+        where: { movie_id: reviewsDto.movie_id },
+        data: {
+          rating: newAverageRating,
+          rating_count: updatedReviewsArray.length,
+        },
+      });
+    }
+
     return {
       status: 200,
-      message: "Review added or updated successfully",
-      data: updatedReviews.reviews[existingReviewIndex],
+      message: "Review updated successfully and average rating recalculated",
+      data: updatedReviewDocument.reviews[existingReviewIndex],
     };
   }
 
-  async findMovieReviewsById(reviewsDto: ReviewsDto) {
+  async findMovieReviewsById(movie_id: string) {
     const review = await this.prisma.reviews.findUnique({
-      where: { movie_id: reviewsDto.movie_id },
+      where: { movie_id: movie_id },
     });
     if (!review) {
       throw new NotFoundException("Review not found");

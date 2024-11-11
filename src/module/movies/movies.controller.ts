@@ -26,19 +26,16 @@ export class ArtworkController {
     return await this.movieService.uploadMovie(moviesDto);
   }
 
-  @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   public async getMovies(): Promise<any> {
     return await this.movieService.getMovies();
   }
 
-  @UseInterceptors(ClassSerializerInterceptor)
   @Get("by_id")
   public async getMovieById(@Query("movie_id") movie_id: string): Promise<any> {
     return await this.movieService.getMovieById(movie_id);
   }
 
-  @UseInterceptors(ClassSerializerInterceptor)
   @Post("genre")
   public async getMoviesByGenre(@Body() moviesDto: MoviesDto): Promise<any> {
     return await this.movieService.getMoviesByGenre(moviesDto);
