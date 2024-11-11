@@ -7,6 +7,7 @@ import {
   UseGuards,
   Put,
   Get,
+  Query,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "src/validation/jwt-auth.guard";
 import { ApiTags } from "@nestjs/swagger";
@@ -33,14 +34,30 @@ export class ArtworkController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @Get("by_id")
-  public async getMovieById(@Body() moviesDto: MoviesDto): Promise<any> {
-    return await this.movieService.getMovieById(moviesDto);
+  public async getMovieById(@Query("movie_id") movie_id: string): Promise<any> {
+    return await this.movieService.getMovieById(movie_id);
   }
 
   @UseInterceptors(ClassSerializerInterceptor)
-  @Get("genre")
+  @Post("genre")
   public async getMoviesByGenre(@Body() moviesDto: MoviesDto): Promise<any> {
     return await this.movieService.getMoviesByGenre(moviesDto);
+  }
+
+  @Get("type")
+  public async getMoviesByType(@Query("type") type: string): Promise<any> {
+    return await this.movieService.getMoviesByType(type);
+  }
+
+  @Get("search")
+  public async searchMoviesByTitle(
+    @Query("movie_title") title: string,
+  ): Promise<any> {
+    return await this.movieService.searchMoviesByTitle(title);
+  }
+  @Get("trending")
+  public async getTopRatedMoviesWithMostReviews(): Promise<any> {
+    return await this.movieService.getTopRatedMoviesWithMostReviews();
   }
 
   @UseGuards(JwtAuthGuard)

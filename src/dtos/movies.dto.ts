@@ -39,7 +39,15 @@ export class MoviesDto {
   })
   @IsString()
   @IsOptional()
-  editor?: string;
+  editor_id?: string;
+
+  @ApiPropertyOptional({
+    description: "Type of Movie  ",
+    example: "Seres",
+  })
+  @IsString()
+  @IsOptional()
+  type?: string;
 
   @ApiPropertyOptional({
     description: "Title of the movie",
@@ -48,6 +56,14 @@ export class MoviesDto {
   @IsString()
   @IsNotEmpty()
   movie_title: string;
+
+  @ApiPropertyOptional({
+    description: "Title of the movie",
+    example: "https://youtu.be/1QZamgwEjiw?si=aZWoSL7fiaLWR",
+  })
+  @IsString()
+  @IsNotEmpty()
+  movie_trailer: string;
 
   @ApiPropertyOptional({
     description: "Tags associated with the movie",
@@ -128,7 +144,7 @@ export class MoviesDto {
   })
   @IsString()
   @IsOptional()
-  rating?: number;
+  reviews?: any;
 
   @ApiPropertyOptional({
     description: "Age rating of the movie",

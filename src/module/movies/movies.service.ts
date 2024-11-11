@@ -16,43 +16,79 @@ export class MovieService {
 
   public async uploadMovie(moviesDto: MoviesDto): Promise<any> {
     try {
-      // Create user information
+      // Prepare movie data with unique movie ID
       const movieData = {
         movie_id: `${Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)}`,
         ...moviesDto,
       };
+
+      // Create the movie entry in the `movies` table, excluding reviews field
+      const { reviews, ...movieDataWithoutReviews } = movieData; // Exclude reviews from the data
       const newMovie = await this.prisma.movies.create({
         data: {
-          ...movieData,
+          ...movieDataWithoutReviews, // Use the movie data without reviews
           ...(moviesDto.movie_poster_image && {
             movie_poster_image: {
               set: [...moviesDto.movie_poster_image],
             },
           }),
-          release_date: movieData.release_date
-            ? new Date(movieData.release_date)
+          release_date: movieDataWithoutReviews.release_date
+            ? new Date(movieDataWithoutReviews.release_date)
             : undefined,
         },
       });
+
       if (!newMovie) {
         throw new BadRequestException({
-          message: "Unable to upload artwork",
+          message: "Unable to upload movie",
         });
       }
 
-      // create Comment datable
+      // Create entry in the `comments` table for the movie
       await this.prisma.comments.create({
         data: { movie_id: movieData.movie_id },
       });
 
-      // create reviews datable
-      await this.prisma.reviews.create({
-        data: { movie_id: movieData.movie_id },
-      });
+      // Only insert or append review if provided
+      if (reviews && typeof reviews === "object") {
+        // Format the single review into the appropriate structure
+        const formattedReview = {
+          user_id: reviews.user_id,
+          profile_image: reviews.profile_image,
+          user_name: reviews.user_name,
+          rating: reviews.rating,
+          comment: reviews.comment,
+        };
+
+        // Check if the movie already has reviews
+        const existingReviews = await this.prisma.reviews.findUnique({
+          where: { movie_id: movieData.movie_id },
+        });
+
+        if (existingReviews) {
+          // Append the new review to the existing reviews array
+          await this.prisma.reviews.update({
+            where: { movie_id: movieData.movie_id },
+            data: {
+              reviews: {
+                push: formattedReview, // Append the new review to the existing array
+              },
+            },
+          });
+        } else {
+          // Create a new review entry with the single review
+          await this.prisma.reviews.create({
+            data: {
+              movie_id: movieData.movie_id,
+              reviews: [formattedReview], // Insert the single review as an array
+            },
+          });
+        }
+      }
 
       return {
         status: 200,
-        message: "Artwork updated successfully",
+        message: "Movie uploaded successfully",
         data: newMovie,
       };
     } catch (error) {
@@ -84,10 +120,10 @@ export class MovieService {
     }
   }
 
-  public async getMovieById(moviesDto: MoviesDto): Promise<any> {
+  public async getMovieById(movie_id: string): Promise<any> {
     try {
       const movies = await this.prisma.movies.findFirst({
-        where: { movie_id: moviesDto.movie_id },
+        where: { movie_id: movie_id },
       });
 
       if (!movies) {
@@ -136,6 +172,143 @@ export class MovieService {
         error: error.message,
       });
     }
+  }
+
+  public async getMoviesByType(type: string): Promise<any> {
+    try {
+      // Using the $in operator to check if the genre is part of the movie_genre array
+      const movies = await this.prisma.movies.findMany({
+        where: {
+          type: type,
+        },
+      });
+
+      if (!movies || movies.length === 0) {
+        throw new BadRequestException({
+          message: "No movies found for the provided type",
+        });
+      }
+
+      return {
+        status: 200,
+        message: "success",
+        data: movies,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
+  public async searchMoviesByTitle(searchTerm: string): Promise<any> {
+    try {
+      // If no search term is provided, throw an error
+      if (!searchTerm) {
+        throw new BadRequestException({
+          message: "Search term cannot be empty",
+        });
+      }
+
+      // Fetch movies with titles that contain the search term
+      const movies = await this.prisma.movies.findMany({
+        where: {
+          movie_title: {
+            contains: searchTerm,
+            mode: "insensitive", // Makes the search case-insensitive
+          },
+        },
+      });
+
+      if (!movies || movies.length === 0) {
+        throw new BadRequestException({
+          message: "No movies found with the provided title",
+        });
+      }
+
+      return {
+        status: 200,
+        message: "success",
+        data: movies,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
+  async getTopRatedMoviesWithMostReviews() {
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+
+    // Define the aggregation pipeline for the reviews collection
+    const pipeline = [
+      {
+        $lookup: {
+          from: "movies",
+          localField: "movie_id",
+          foreignField: "movie_id",
+          as: "movieData",
+        },
+      },
+      { $unwind: "$movieData" },
+
+      // Filter to only include movies created in the last 5 days
+      {
+        $match: {
+          "movieData.createdAt": { $gte: fiveDaysAgo },
+          "reviews.createdAt": { $gte: fiveDaysAgo },
+        },
+      },
+
+      // Group by movie_id to aggregate review count and average rating
+      {
+        $group: {
+          _id: "$movie_id",
+          reviewCount: { $sum: 1 },
+          averageRating: { $avg: "$reviews.rating" },
+        },
+      },
+      { $sort: { reviewCount: -1, averageRating: -1 } },
+      { $limit: 12 },
+    ];
+
+    // Execute the aggregation on the `reviews` collection
+    const topReviews = await this.mongoDBService
+      .getDatabase()
+      .collection("reviews")
+      .aggregate(pipeline)
+      .toArray();
+
+    if (!topReviews) {
+      throw new BadRequestException({
+        message: "Couldn't retrieve movie ID(s)",
+      });
+    }
+
+    // Extract movie IDs from the aggregation result
+    const movieIds = topReviews.map((review) => review._id);
+
+    // Fetch movie details for the top movies using the movie IDs
+    const movies = await this.mongoDBService
+      .getDatabase()
+      .collection("movies")
+      .find({
+        movie_id: { $in: movieIds },
+      })
+      .toArray();
+
+    if (!movies) {
+      throw new BadRequestException({
+        message: "Unable to fetch movies",
+      });
+    }
+
+    return {
+      status: 200,
+      message: "Movies fetched successfully",
+      data: movies,
+    };
   }
 
   public async updateMovie(moviesDto: MoviesDto): Promise<any> {

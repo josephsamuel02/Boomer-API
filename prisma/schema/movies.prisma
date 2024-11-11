@@ -1,10 +1,12 @@
 model movies {
-    id                 String     @id @default(auto()) @map("_id") @db.ObjectId
-    movie_id           String?    @unique
+    id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+    movie_id           String?   @unique
     poster_id          String?
     editors_id         String[]
     movie_title        String?
+    movie_trailer      String?
     tags               String[]
+    type               String?
     synopsis           String?
     movie_genre        String[]
     released           Boolean?
@@ -13,12 +15,12 @@ model movies {
     company            String?
     movie_poster_image String[]
     download_links     String[]
-    rating             Int?
-    age_rating         ageRating?
-    industry           String?
-    language           String?
-    createdAt          DateTime?  @default(now())
-    updatedAt          DateTime?  @updatedAt
+
+    age_rating ageRating?
+    industry   String?
+    language   String?
+    createdAt  DateTime?  @default(now())
+    updatedAt  DateTime?  @updatedAt
 }
 
 enum ageRating {
