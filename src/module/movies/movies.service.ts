@@ -88,7 +88,11 @@ export class MovieService {
 
   public async getMovies(): Promise<any> {
     try {
-      const movies = await this.prisma.movies.findMany();
+      const movies = await this.prisma.movies.findMany({
+        orderBy: {
+          createdAt: "desc", // Sorts from latest to oldest
+        },
+      });
 
       if (!movies) {
         throw new BadRequestException({
@@ -142,6 +146,9 @@ export class MovieService {
             hasSome: moviesDto.movie_genre, // Alternatively, use 'has' for exact match of a single genre
           },
         },
+        orderBy: {
+          createdAt: "desc", // Sorts from latest to oldest
+        },
       });
 
       if (!movies || movies.length === 0) {
@@ -168,6 +175,9 @@ export class MovieService {
       const movies = await this.prisma.movies.findMany({
         where: {
           type: type,
+        },
+        orderBy: {
+          createdAt: "desc", // Sorts from latest to oldest
         },
       });
 
@@ -206,6 +216,9 @@ export class MovieService {
             mode: "insensitive", // Makes the search case-insensitive
           },
         },
+        orderBy: {
+          createdAt: "desc", // Sorts from latest to oldest
+        },
       });
 
       if (!movies || movies.length === 0) {
@@ -229,7 +242,6 @@ export class MovieService {
   async getTopRatedMoviesWithMostReviews() {
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
 
-    // Define the aggregation pipeline for the reviews collection
     const pipeline = [
       {
         $lookup: {
@@ -241,23 +253,31 @@ export class MovieService {
       },
       { $unwind: "$movieData" },
 
-      // Filter to only include movies created in the last 5 days
+      // Filter to only include movies and reviews created in the last 5 days
       {
         $match: {
           "movieData.createdAt": { $gte: fiveDaysAgo },
-          "reviews.createdAt": { $gte: fiveDaysAgo },
+          createdAt: { $gte: fiveDaysAgo },
         },
       },
+
+      // Sort by review creation date in descending order (latest to oldest)
+      { $sort: { createdAt: -1 } },
 
       // Group by movie_id to aggregate review count and average rating
       {
         $group: {
           _id: "$movie_id",
           reviewCount: { $sum: 1 },
-          averageRating: { $avg: "$reviews.rating" },
+          averageRating: { $avg: "$rating" },
+          movieData: { $first: "$movieData" }, // Keep the latest movieData entry after sorting
         },
       },
+
+      // Sort by review count and average rating
       { $sort: { reviewCount: -1, averageRating: -1 } },
+
+      // Limit to top 12 results
       { $limit: 12 },
     ];
 
