@@ -11,7 +11,7 @@ import {
 } from "@nestjs/common";
 import { JwtAuthGuard } from "src/validation/jwt-auth.guard";
 import { ApiTags } from "@nestjs/swagger";
-import { MoviesDto } from "src/dtos";
+import { DownloadLinkDto, MoviesDto } from "src/dtos";
 import { MovieService } from "./movies.service";
 
 @ApiTags("movies")
@@ -62,5 +62,23 @@ export class ArtworkController {
   @Put("update")
   public async updateMovie(@Body() moviesDto: MoviesDto): Promise<any> {
     return await this.movieService.updateMovie(moviesDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Put("add_download_link")
+  public async addDownloadLink(
+    @Body() downloadLinkDto: DownloadLinkDto,
+  ): Promise<any> {
+    return await this.movieService.addDownloadLink(downloadLinkDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Put("rate_download_link")
+  public async rateDownloadLink(
+    @Body() downloadLinkDto: DownloadLinkDto,
+  ): Promise<any> {
+    return await this.movieService.rateDownloadLink(downloadLinkDto);
   }
 }

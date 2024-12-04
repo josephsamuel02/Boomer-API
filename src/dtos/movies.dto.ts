@@ -23,7 +23,7 @@ export class MoviesDto {
     example: "movie_12345",
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   movie_id?: string;
 
   @ApiPropertyOptional({
@@ -149,11 +149,11 @@ export class MoviesDto {
 
   @ApiPropertyOptional({
     description: "Download links for the movie",
-    example: ["https://example.com/download1", "https://example.com/download2"],
+    example: "https://example.com/download2",
   })
   @IsArray()
   @IsString({ each: true })
-  download_links?: string[];
+  download_link?: string;
 
   @ApiPropertyOptional({
     description: "Rating of the movie",
@@ -166,6 +166,14 @@ export class MoviesDto {
   @IsNumber()
   @IsOptional()
   rating?: number;
+
+  @ApiPropertyOptional({
+    description: "Rating a download link",
+    example: "inc",
+  })
+  @IsString()
+  @IsOptional()
+  downloadLinkRate: string;
 
   @ApiPropertyOptional({
     description: "Age rating of the movie",

@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { MoviesDto } from "src/dtos";
+import { DownloadLinkDto, MoviesDto } from "src/dtos";
 import { MongoDBService } from "src/mongodb/mongodb.service";
 
 @Injectable()
@@ -23,7 +19,7 @@ export class MovieService {
       };
 
       // Extract reviews from the movie data to handle it separately
-      const { reviews, ...movieDataWithoutReviews } = movieData;
+      const { download_link, reviews, ...movieDataWithoutReviews } = movieData;
 
       // Create the movie entry in the `movies` table
       const newMovie = await this.prisma.movies.create({
@@ -37,6 +33,21 @@ export class MovieService {
           release_date: movieDataWithoutReviews.release_date
             ? new Date(movieDataWithoutReviews.release_date)
             : undefined,
+          downloadLinks: moviesDto.download_link
+            ? {
+                create: {
+                  user_id: moviesDto.poster_id,
+                  url: download_link, // Assuming download_link is a string
+                },
+              }
+            : undefined, // If no download_link, don't include the field
+        },
+        select: {
+          id: true, // Select relevant fields from the created movie
+          movie_id: true,
+          movie_title: true,
+          // Include the downloadLinks as well if needed
+          downloadLinks: true,
         },
       });
 
@@ -116,6 +127,9 @@ export class MovieService {
     try {
       const movies = await this.prisma.movies.findFirst({
         where: { movie_id: movie_id },
+        include: {
+          downloadLinks: true,
+        },
       });
 
       if (!movies) {
@@ -321,14 +335,6 @@ export class MovieService {
 
   public async updateMovie(moviesDto: MoviesDto): Promise<any> {
     try {
-      const existingMovie = await this.prisma.movies.findUnique({
-        where: { movie_id: moviesDto.movie_id },
-      });
-
-      if (!existingMovie) {
-        throw new NotFoundException("Movie not found");
-      }
-
       const updatedMovie = await this.prisma.movies.update({
         where: { movie_id: moviesDto.movie_id },
         data: {
@@ -341,7 +347,7 @@ export class MovieService {
 
       if (!updatedMovie) {
         throw new BadRequestException({
-          message: "Unable to update artwork",
+          message: "Unable to update download link",
         });
       }
 
@@ -349,6 +355,75 @@ export class MovieService {
         status: 200,
         message: "Movie updated successfully",
         data: updatedMovie,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
+  public async addDownloadLink(downloadLinkDto: DownloadLinkDto): Promise<any> {
+    try {
+      const updatedMovie = await this.prisma.downloadLink.create({
+        data: {
+          user_id: downloadLinkDto.user_id,
+          url: downloadLinkDto.url,
+          movie_id: downloadLinkDto.movie_id, // Ensure this matches the ObjectId format
+          rated_by: [], // Initialize rated_by as an empty array if necessary
+          rating: 0, // Default rating to 0
+        },
+      });
+
+      if (!updatedMovie) {
+        throw new BadRequestException({
+          message: "Unable to update artwork",
+        });
+      }
+
+      return {
+        status: 200,
+        message: "Movie rated successfully",
+        data: updatedMovie,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
+  public async rateDownloadLink(
+    downloadLinkDto: DownloadLinkDto,
+  ): Promise<any> {
+    try {
+      const { id, rating, ...others } = downloadLinkDto;
+
+      const rate = rating == "inc" ? 1 : -1;
+
+      const updatedDownloadLink = await this.prisma.downloadLink.update({
+        where: { id: id },
+        data: {
+          rating: {
+            increment: rate,
+          },
+          rated_by: {
+            push: downloadLinkDto.user_id,
+          },
+          ...others,
+        },
+      });
+
+      if (!updatedDownloadLink) {
+        throw new BadRequestException({
+          message: "Unable to update artwork",
+        });
+      }
+
+      return {
+        status: 200,
+        message: "Movie rated successfully",
+        data: updatedDownloadLink,
       };
     } catch (error) {
       throw new BadRequestException({
