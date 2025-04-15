@@ -52,6 +52,7 @@ export class ArtworkController {
   ): Promise<any> {
     return await this.movieService.searchMoviesByTitle(title);
   }
+
   @Get("trending")
   public async getTopRatedMoviesWithMostReviews(): Promise<any> {
     return await this.movieService.getTopRatedMoviesWithMostReviews();
