@@ -46,11 +46,11 @@ export class ArtworkController {
     return await this.movieService.getMoviesByType(type);
   }
 
-  @Get("search")
+  @Post("search")
   public async searchMoviesByTitle(
-    @Query("movie_title") title: string,
+    @Body("movie_title") movie_title: string,
   ): Promise<any> {
-    return await this.movieService.searchMoviesByTitle(title);
+    return this.movieService.searchMoviesByTitle(movie_title);
   }
 
   @Get("trending")

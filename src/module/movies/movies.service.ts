@@ -166,9 +166,11 @@ export class MovieService {
       });
 
       if (!movies || movies.length === 0) {
-        throw new BadRequestException({
+        return {
+          status: 200,
           message: "No movies found for the provided genres",
-        });
+          data: [],
+        };
       }
 
       return {
@@ -236,9 +238,11 @@ export class MovieService {
       });
 
       if (!movies || movies.length === 0) {
-        throw new BadRequestException({
-          message: "No movies found with the provided title",
-        });
+        return {
+          status: 200,
+          message: "No movies found",
+          data: [], // Return an empty array if no movies are found
+        };
       }
 
       return {
