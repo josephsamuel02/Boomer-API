@@ -105,10 +105,16 @@ export class MovieService {
         },
       });
 
-      if (!movies) {
-        throw new BadRequestException({
-          message: "Unable to get movies",
-        });
+      if (!movies || movies.length === 0) {
+        // throw new BadRequestException({
+        //   message: "Unable to get movies",
+        // });
+
+        return {
+          status: 400,
+          message: "No movies found",
+          data: [],
+        };
       }
 
       return {
@@ -133,9 +139,14 @@ export class MovieService {
       });
 
       if (!movies) {
-        throw new BadRequestException({
-          message: "Unable to get movies",
-        });
+        // throw new BadRequestException({
+        //   message: "Unable to get movies",
+        // });
+        return {
+          status: 400,
+          message: "Movie not found",
+          data: [],
+        };
       }
 
       return {
@@ -198,9 +209,11 @@ export class MovieService {
       });
 
       if (!movies || movies.length === 0) {
-        throw new BadRequestException({
-          message: "No movies found for the provided type",
-        });
+        return {
+          status: 200,
+          message: "No movies found for the provided type ",
+          data: [],
+        };
       }
 
       return {
