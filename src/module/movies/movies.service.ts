@@ -13,6 +13,7 @@ export class MovieService {
   public async uploadMovie(moviesDto: MoviesDto): Promise<any> {
     try {
       // Prepare movie data with unique movie ID
+      const M_id = `${Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)}`;
       const movieData = {
         movie_id: `${Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)}`,
         ...moviesDto,
@@ -30,6 +31,7 @@ export class MovieService {
               set: [...moviesDto.movie_poster_image],
             },
           }),
+          movie_id: movieData.movie_id ? movieData.movie_id : M_id,
           release_date: movieDataWithoutReviews.release_date
             ? new Date(movieDataWithoutReviews.release_date)
             : undefined,
@@ -38,6 +40,7 @@ export class MovieService {
                 create: {
                   user_id: moviesDto.user_id,
                   url: download_link, // Assuming download_link is a string
+                  // Ensure this matches the ObjectId format
                 },
               }
             : undefined, // If no download_link, don't include the field
