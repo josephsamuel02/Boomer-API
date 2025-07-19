@@ -1,7 +1,6 @@
 model movies {
     id                   String         @id @default(auto()) @map("_id") @db.ObjectId
     movie_id             String?        @unique
-    user_id              String
     poster_id            String?
     poster_profile_image String?
     poster_user_name     String?
@@ -29,7 +28,7 @@ model movies {
 
 model downloadLink {
     id       String  @id @default(auto()) @map("_id") @db.ObjectId
-    user_id  String
+    user_id  String?
     url      String?
     rated_by Json[]
     rating   Int?    @default(0)

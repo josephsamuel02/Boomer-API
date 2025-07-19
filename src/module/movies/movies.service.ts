@@ -20,7 +20,8 @@ export class MovieService {
       };
 
       // Extract reviews from the movie data to handle it separately
-      const { download_link, reviews, ...movieDataWithoutReviews } = movieData;
+      const { download_link, reviews, user_id, ...movieDataWithoutReviews } =
+        movieData;
 
       // Create the movie entry in the `movies` table
       const newMovie = await this.prisma.movies.create({
@@ -38,9 +39,9 @@ export class MovieService {
           downloadLinks: moviesDto.download_link
             ? {
                 create: {
-                  user_id: moviesDto.user_id,
+                  user_id: user_id,
+                  movie_id: movieData.movie_id,
                   url: download_link,
-                  movie_id: M_id,
                 },
               }
             : undefined, // If no download_link, don't include the field
