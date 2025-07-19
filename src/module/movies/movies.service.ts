@@ -60,18 +60,20 @@ export class MovieService {
       }
 
       // Handle review if provided
-      if (reviews) {
+      if (reviews && Object.keys(reviews).length > 0) {
         // Wrap the single review object in an array format for storage
-        const formattedReviewsArray = [
-          {
-            user_id: reviews.user_id,
-            profile_image: movieDataWithoutReviews.poster_profile_image,
-            user_name: movieDataWithoutReviews.poster_user_name,
-            rating: reviews.rating,
-            comment: reviews.comment,
-          },
-        ];
+        const baseReview = {
+          user_id: reviews.user_id,
+          profile_image: movieDataWithoutReviews.poster_profile_image,
+          user_name: movieDataWithoutReviews.poster_user_name,
+        };
 
+        const optionalFields = {
+          ...(reviews.rating !== undefined && { rating: reviews.rating }),
+          ...(reviews.comment && { comment: reviews.comment }),
+        };
+
+        const formattedReviewsArray = [{ ...baseReview, ...optionalFields }];
         // Insert the reviews array into the Reviews table
         await this.prisma.reviews.create({
           data: {
