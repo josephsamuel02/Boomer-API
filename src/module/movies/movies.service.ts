@@ -13,7 +13,6 @@ export class MovieService {
   public async uploadMovie(moviesDto: MoviesDto): Promise<any> {
     try {
       // Prepare movie data with unique movie ID
-      const M_id = `${Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)}`;
       const movieData = {
         movie_id: `${Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)}`,
         ...moviesDto,
@@ -32,14 +31,14 @@ export class MovieService {
               set: [...moviesDto.movie_poster_image],
             },
           }),
-          movie_id: M_id,
+          movie_id: movieData.movie_id,
           release_date: movieDataWithoutReviews.release_date
             ? new Date(movieDataWithoutReviews.release_date)
             : undefined,
           downloadLinks: moviesDto.download_link
             ? {
                 create: {
-                  user_id: user_id,
+                  user_id: user_id, // Ensure user_id is included if provided
                   url: download_link,
                 },
               }
@@ -444,6 +443,30 @@ export class MovieService {
         status: 200,
         message: "Movie rated successfully",
         data: updatedDownloadLink,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
+  public async deleteMovie(movie_id: string): Promise<any> {
+    try {
+      const deletedMovie = await this.prisma.movies.delete({
+        where: { movie_id: movie_id },
+      });
+
+      if (!deletedMovie) {
+        throw new BadRequestException({
+          message: "Unable to delete movie",
+        });
+      }
+
+      return {
+        status: 200,
+        message: "Movie deleted successfully",
+        data: deletedMovie,
       };
     } catch (error) {
       throw new BadRequestException({

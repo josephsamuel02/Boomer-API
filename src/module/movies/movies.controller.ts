@@ -8,6 +8,7 @@ import {
   Put,
   Get,
   Query,
+  Delete,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "src/validation/jwt-auth.guard";
 import { ApiTags } from "@nestjs/swagger";
@@ -81,5 +82,10 @@ export class ArtworkController {
     @Body() downloadLinkDto: DownloadLinkDto,
   ): Promise<any> {
     return await this.movieService.rateDownloadLink(downloadLinkDto);
+  }
+
+  @Delete("delete")
+  public async deleteMovie(@Query("movie_id") movie_id: string): Promise<any> {
+    return await this.movieService.deleteMovie(movie_id);
   }
 }
