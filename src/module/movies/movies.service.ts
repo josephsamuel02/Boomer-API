@@ -40,7 +40,6 @@ export class MovieService {
             ? {
                 create: {
                   user_id: user_id,
-                  movie_id: movieData.movie_id,
                   url: download_link,
                 },
               }
