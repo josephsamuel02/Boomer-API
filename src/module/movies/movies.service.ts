@@ -39,8 +39,8 @@ export class MovieService {
             ? {
                 create: {
                   user_id: moviesDto.user_id,
-                  url: download_link, // Assuming download_link is a string
-                  // movie_id: M_id, // Ensure this matches the ObjectId format
+                  url: download_link,
+                  movie_id: M_id,
                 },
               }
             : undefined, // If no download_link, don't include the field
