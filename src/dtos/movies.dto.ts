@@ -199,4 +199,9 @@ export class MoviesDto {
   @IsString()
   @IsOptional()
   language?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  user_id?: string;
 }

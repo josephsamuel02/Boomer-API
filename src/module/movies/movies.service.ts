@@ -36,7 +36,7 @@ export class MovieService {
           downloadLinks: moviesDto.download_link
             ? {
                 create: {
-                  user_id: moviesDto.poster_id,
+                  user_id: moviesDto.user_id,
                   url: download_link, // Assuming download_link is a string
                 },
               }
