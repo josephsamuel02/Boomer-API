@@ -200,6 +200,14 @@ export class MoviesDto {
   @IsOptional()
   language?: string;
 
+  @ApiPropertyOptional({
+    description: "Recommends for the movie",
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  recommend?: boolean;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()

@@ -20,6 +20,7 @@ model movies {
     movie_poster_image   String[]
     age_rating           ageRating?
     industry             String?
+    recommend            Boolean?       @default(false)
     language             String?
     createdAt            DateTime?      @default(now())
     updatedAt            DateTime?      @updatedAt

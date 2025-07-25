@@ -453,6 +453,64 @@ export class MovieService {
     }
   }
 
+  public async updateRecommends(moviesDto: MoviesDto): Promise<any> {
+    try {
+      const updatedMovie = await this.prisma.movies.update({
+        where: { movie_id: moviesDto.movie_id },
+        data: {
+          recommend: moviesDto.recommend,
+        },
+      });
+
+      if (!updatedMovie) {
+        throw new BadRequestException({
+          message: "Unable to update recommends",
+        });
+      }
+
+      return {
+        status: 200,
+        message: "Recommends updated successfully",
+        data: updatedMovie,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
+  public async getRecommendations(): Promise<any> {
+    try {
+      const recommendations = await this.prisma.movies.findMany({
+        where: {
+          recommend: true,
+        },
+        orderBy: {
+          createdAt: "desc", // Sorts from latest to oldest
+        },
+      });
+      console.log("Recommendations: ", recommendations);
+      if (!recommendations || recommendations.length == 0) {
+        return {
+          status: 200,
+          message: "No recommendations found",
+          data: [],
+        };
+      }
+
+      return {
+        status: 200,
+        message: "Recommendations fetched successfully",
+        data: recommendations,
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        error: error.message,
+      });
+    }
+  }
+
   public async deleteMovie(movie_id: string): Promise<any> {
     try {
       const deletedMovie = await this.prisma.movies.delete({

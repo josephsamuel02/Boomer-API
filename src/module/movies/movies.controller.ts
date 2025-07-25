@@ -84,6 +84,20 @@ export class ArtworkController {
     return await this.movieService.rateDownloadLink(downloadLinkDto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Put("update_recommends")
+  public async updateRecommends(@Body() moviesDto: MoviesDto): Promise<any> {
+    return await this.movieService.updateRecommends(moviesDto);
+  }
+
+  @Get("get_recommendations")
+  public async getRecommendations(): Promise<any> {
+    return await this.movieService.getRecommendations();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
   @Delete("delete")
   public async deleteMovie(@Query("movie_id") movie_id: string): Promise<any> {
     return await this.movieService.deleteMovie(movie_id);
