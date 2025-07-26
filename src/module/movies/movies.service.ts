@@ -470,7 +470,7 @@ export class MovieService {
 
       return {
         status: 200,
-        message: "Recommends updated successfully",
+        message: "Recommendations updated successfully",
         data: updatedMovie,
       };
     } catch (error) {
