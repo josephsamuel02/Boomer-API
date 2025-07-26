@@ -275,7 +275,8 @@ export class MovieService {
   }
 
   async getTopRatedMoviesWithMostReviews() {
-    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
     const pipeline = [
       {
@@ -288,11 +289,11 @@ export class MovieService {
       },
       { $unwind: "$movieData" },
 
-      // Filter to only include movies and reviews created in the last 5 days
+      // Filter to only include movies and reviews created in the last 8 days
       {
         $match: {
-          "movieData.createdAt": { $gte: fiveDaysAgo },
-          createdAt: { $gte: fiveDaysAgo },
+          "movieData.createdAt": { $gte: fourteenDaysAgo },
+          createdAt: { $gte: eightDaysAgo },
         },
       },
 
