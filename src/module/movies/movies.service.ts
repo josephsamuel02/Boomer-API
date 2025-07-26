@@ -512,15 +512,23 @@ export class MovieService {
 
   public async deleteMovie(movie_id: string): Promise<any> {
     try {
-      const deletedMovie = await this.prisma.movies.delete({
-        where: { movie_id: movie_id },
+      // 1. Find the movie
+      const movie = await this.prisma.movies.findUnique({
+        where: { movie_id },
+        include: { downloadLinks: true },
       });
 
-      if (!deletedMovie) {
-        throw new BadRequestException({
-          message: "Unable to delete movie",
-        });
+      if (!movie) {
+        throw new BadRequestException({ message: "Movie not found" });
       }
+
+      await this.prisma.downloadLink.deleteMany({
+        where: { movie_id: movie.id }, // assuming movie.id is the reference
+      });
+
+      const deletedMovie = await this.prisma.movies.delete({
+        where: { movie_id },
+      });
 
       return {
         status: 200,
@@ -528,9 +536,7 @@ export class MovieService {
         data: deletedMovie,
       };
     } catch (error) {
-      throw new BadRequestException({
-        error: error.message,
-      });
+      throw new BadRequestException({ error: error.message });
     }
   }
 }
