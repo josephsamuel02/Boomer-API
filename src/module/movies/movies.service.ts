@@ -490,7 +490,6 @@ export class MovieService {
           createdAt: "desc", // Sorts from latest to oldest
         },
       });
-      console.log("Recommendations: ", recommendations);
       if (!recommendations || recommendations.length == 0) {
         return {
           status: 200,
