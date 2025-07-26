@@ -523,7 +523,7 @@ export class MovieService {
       }
 
       await this.prisma.downloadLink.deleteMany({
-        where: { movie_id: movie.id }, // assuming movie.id is the reference
+        where: { movie_id: movie.movie_id }, // assuming movie.id is the reference
       });
 
       const deletedMovie = await this.prisma.movies.delete({
