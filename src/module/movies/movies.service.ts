@@ -274,85 +274,42 @@ export class MovieService {
     }
   }
 
-  async getTopRatedMoviesWithMostReviews() {
-    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  public async getTopRatedMoviesWithMostReviews(): Promise<any> {
+    try {
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
-    const pipeline = [
-      {
-        $lookup: {
-          from: "movies",
-          localField: "movie_id",
-          foreignField: "movie_id",
-          as: "movieData",
+      const today = new Date();
+      // Fetch movies created in the last 14 days
+      const trendingMovies = await this.prisma.movies.findMany({
+        where: {
+          createdAt: {
+            gte: fourteenDaysAgo,
+            lte: today,
+          },
         },
-      },
-      { $unwind: "$movieData" },
-
-      // Filter to only include movies and reviews created in the last 8 days
-      {
-        $match: {
-          "movieData.createdAt": { $gte: fourteenDaysAgo },
-          createdAt: { $gte: eightDaysAgo },
+        orderBy: {
+          rating: "desc",
         },
-      },
+        take: 20,
+      });
+      if (!trendingMovies || trendingMovies.length === 0) {
+        return {
+          status: 200,
+          message: "No recent movies found",
+          data: [],
+        };
+      }
 
-      // Sort by review creation date in descending order (latest to oldest)
-      { $sort: { createdAt: -1 } },
-
-      // Group by movie_id to aggregate review count and average rating
-      {
-        $group: {
-          _id: "$movie_id",
-          reviewCount: { $sum: 1 },
-          averageRating: { $avg: "$rating" },
-          movieData: { $first: "$movieData" }, // Keep the latest movieData entry after sorting
-        },
-      },
-
-      // Sort by review count and average rating
-      { $sort: { reviewCount: -1, averageRating: -1 } },
-
-      // Limit to top 12 results
-      { $limit: 12 },
-    ];
-
-    // Execute the aggregation on the `reviews` collection
-    const topReviews = await this.mongoDBService
-      .getDatabase()
-      .collection("reviews")
-      .aggregate(pipeline)
-      .toArray();
-
-    if (!topReviews) {
+      return {
+        status: 200,
+        message: "Movies fetched successfully",
+        data: trendingMovies,
+      };
+    } catch (error) {
       throw new BadRequestException({
-        message: "Couldn't retrieve movie ID(s)",
+        error: error.message,
       });
     }
-
-    // Extract movie IDs from the aggregation result
-    const movieIds = topReviews.map((review) => review._id);
-
-    // Fetch movie details for the top movies using the movie IDs
-    const movies = await this.mongoDBService
-      .getDatabase()
-      .collection("movies")
-      .find({
-        movie_id: { $in: movieIds },
-      })
-      .toArray();
-
-    if (!movies) {
-      throw new BadRequestException({
-        message: "Unable to fetch movies",
-      });
-    }
-
-    return {
-      status: 200,
-      message: "Movies fetched successfully",
-      data: movies,
-    };
   }
 
   public async updateMovie(moviesDto: MoviesDto): Promise<any> {
