@@ -274,7 +274,7 @@ export class MovieService {
     }
   }
 
-  public async getTopRatedMoviesWithMostReviews(): Promise<any> {
+  public async getTrendingMovies(): Promise<any> {
     try {
       const fourteenDaysAgo = new Date();
       fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
@@ -368,6 +368,75 @@ export class MovieService {
         error: error.message,
       });
     }
+  }
+
+  public async getTopRatedMovies(): Promise<any> {
+    const ninetyFiveDaysAgo = new Date();
+    ninetyFiveDaysAgo.setDate(ninetyFiveDaysAgo.getDate() - 95);
+    const now = new Date();
+    const recentMovies = await this.prisma.movies.findMany({
+      where: {
+        createdAt: {
+          gte: ninetyFiveDaysAgo,
+          lte: now,
+        },
+      },
+      select: {
+        movie_id: true,
+      },
+    });
+
+    const movieIds = recentMovies.map((movie) => movie.movie_id);
+
+    const allReviews = await this.prisma.reviews.findMany({
+      where: {
+        movie_id: { in: movieIds },
+      },
+    });
+
+    const topRatedMovieIds = allReviews
+      .map((reviewDoc) => {
+        const last95DaysReviews = reviewDoc.reviews.filter(
+          (r) => r.createdAt && r.createdAt >= ninetyFiveDaysAgo,
+        );
+
+        const ratings = last95DaysReviews.map((r) => r.rating).filter(Boolean);
+
+        const averageRating =
+          ratings.length > 0
+            ? ratings.reduce((acc, curr) => acc + curr, 0) / ratings.length
+            : 0;
+
+        return {
+          movie_id: reviewDoc.movie_id,
+          averageRating,
+        };
+      })
+      .filter((r) => r.averageRating > 0)
+      .sort((a, b) => b.averageRating - a.averageRating)
+      .map((r) => r.movie_id);
+
+    const topRatedMovies = await this.prisma.movies.findMany({
+      where: {
+        movie_id: {
+          in: topRatedMovieIds,
+        },
+      },
+      select: {
+        movie_id: true,
+        movie_title: true,
+        rating: true,
+        movie_poster_image: true,
+        movie_genre: true,
+        type: true,
+      },
+    });
+
+    return {
+      status: 200,
+      message: "Top rated movies from the last 95 days",
+      data: topRatedMovies,
+    };
   }
 
   public async updateMovie(moviesDto: MoviesDto): Promise<any> {

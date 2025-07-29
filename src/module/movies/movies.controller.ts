@@ -55,8 +55,13 @@ export class ArtworkController {
   }
 
   @Get("trending")
-  public async getTopRatedMoviesWithMostReviews(): Promise<any> {
-    return await this.movieService.getTopRatedMoviesWithMostReviews();
+  public async getTrendingMovies(): Promise<any> {
+    return await this.movieService.getTrendingMovies();
+  }
+
+  @Get("top_rated")
+  public async getTopRatedMovies(): Promise<any> {
+    return await this.movieService.getTopRatedMovies();
   }
 
   @UseGuards(JwtAuthGuard)
