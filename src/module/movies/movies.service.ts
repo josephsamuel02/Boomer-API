@@ -276,34 +276,92 @@ export class MovieService {
 
   public async getTopRatedMoviesWithMostReviews(): Promise<any> {
     try {
-      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-      const today = new Date();
-      // Fetch movies created in the last 14 days
-      const trendingMovies = await this.prisma.movies.findMany({
+      const recentMovies = await this.prisma.movies.findMany({
         where: {
           createdAt: {
             gte: fourteenDaysAgo,
-            lte: today,
           },
         },
-        orderBy: {
-          rating: "desc",
+        select: {
+          movie_id: true,
+          movie_title: true,
         },
-        take: 20,
       });
-      if (!trendingMovies || trendingMovies.length === 0) {
+
+      const movieIds = recentMovies.map((movie) => movie.movie_id);
+
+      const reviews = await this.prisma.reviews.findMany({
+        where: {
+          movie_id: {
+            in: movieIds,
+          },
+        },
+      });
+
+      if (!reviews || reviews.length == 0) {
         return {
-          status: 200,
-          message: "No recent movies found",
+          status: 401,
+          message: "no records found",
           data: [],
         };
       }
 
+      const results = reviews.map((r) => {
+        const validReviews = r.reviews.filter((rev) => {
+          return rev.createdAt && new Date(rev.createdAt) >= fourteenDaysAgo;
+        });
+
+        const reviewCount = validReviews.length;
+        const averageRating =
+          reviewCount > 0
+            ? validReviews.reduce((acc, cur) => acc + (cur.rating || 0), 0) /
+              reviewCount
+            : 0;
+
+        return {
+          movie_id: r.movie_id,
+          averageRating,
+          reviewCount,
+        };
+      });
+
+      const sorted = results
+        .sort((a, b) => {
+          if (b.reviewCount === a.reviewCount) {
+            return b.averageRating - a.averageRating;
+          }
+          return b.reviewCount - a.reviewCount;
+        })
+        .slice(0, 12); // top 12
+      const topMovieIds = sorted.map((item) => item.movie_id);
+
+      const topMovies = await this.prisma.movies.findMany({
+        where: {
+          movie_id: {
+            in: topMovieIds,
+          },
+        },
+        select: {
+          movie_id: true,
+          movie_title: true,
+          rating: true,
+          movie_poster_image: true,
+          movie_genre: true,
+          type: true,
+        },
+      });
+      const topMoviesSorted = topMovieIds.map((id) =>
+        topMovies.find((movie) => movie.movie_id === id),
+      );
+
       return {
         status: 200,
-        message: "Movies fetched successfully",
-        data: trendingMovies,
+        message:
+          "Top 12 movies with highest reviews and ratings in last 14 days",
+        data: topMoviesSorted,
       };
     } catch (error) {
       throw new BadRequestException({
